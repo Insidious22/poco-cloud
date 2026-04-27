@@ -22,16 +22,15 @@ pnpm build
 Configura variables:
 
 ```bash
-export JWT_SECRET="cambia-esto-por-un-secreto-largo"
-export DB_PATH="$HOME/poco-cloud/data/poco-cloud.sqlite"
-export FILES_ROOT="$HOME"
-export LOG_DIR="$HOME"
+cp ~/poco-cloud/infra/termux/poco-cloud.env.example ~/poco-cloud.env
+nano ~/poco-cloud.env
 ```
 
-Ejecuta:
+Deploy completo:
 
 ```bash
-sh ~/poco-cloud/infra/termux/start-app.sh
+chmod +x ~/poco-cloud/infra/termux/deploy.sh
+~/poco-cloud/infra/termux/deploy.sh
 ```
 
 ## Termux:Boot

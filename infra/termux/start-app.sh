@@ -1,6 +1,13 @@
 #!/data/data/com.termux/files/usr/bin/sh
 set -eu
 
+ENV_FILE="${ENV_FILE:-$HOME/poco-cloud.env}"
+
+if [ -f "$ENV_FILE" ]; then
+  # shellcheck disable=SC1090
+  . "$ENV_FILE"
+fi
+
 APP_DIR="${APP_DIR:-$HOME/poco-cloud}"
 API_DIR="$APP_DIR/apps/api"
 LOG_DIR="${LOG_DIR:-$HOME}"

@@ -26,10 +26,18 @@ export const SystemStatus = () => {
     return () => window.clearInterval(timer);
   }, [reload]);
 
-  if (loading || !data) {
+  if (loading && !data) {
     return (
       <Card className="grid min-h-48 place-items-center">
         <Spinner />
+      </Card>
+    );
+  }
+
+  if (!data) {
+    return (
+      <Card>
+        <p className="text-sm text-slate-400">No se pudo leer el estado del sistema.</p>
       </Card>
     );
   }
