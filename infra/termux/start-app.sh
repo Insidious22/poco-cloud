@@ -11,6 +11,7 @@ fi
 APP_DIR="${APP_DIR:-$HOME/poco-cloud}"
 API_DIR="$APP_DIR/apps/api"
 LOG_DIR="${LOG_DIR:-$HOME}"
+API_PID_FILE="$LOG_DIR/poco-cloud-api.pid"
 DB_PATH="${DB_PATH:-$APP_DIR/data/poco-cloud.sqlite}"
 JWT_SECRET="${JWT_SECRET:-change-this-with-a-long-random-secret}"
 PORT="${PORT:-8080}"
@@ -28,4 +29,5 @@ export HOST PORT WEB_ORIGIN JWT_SECRET DB_PATH FILES_ROOT LOG_DIR
 export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
 
 pnpm db:migrate >> "$LOG_DIR/api.log" 2>&1 || true
+echo "$$" > "$API_PID_FILE"
 exec pnpm start >> "$LOG_DIR/api.log" 2>&1

@@ -15,6 +15,7 @@ fi
 APP_DIR="${APP_DIR:-$HOME/poco-cloud}"
 LOG_DIR="${LOG_DIR:-$HOME}"
 API_LOG="$LOG_DIR/api.log"
+API_PID_FILE="$LOG_DIR/poco-cloud-api.pid"
 
 mkdir -p "$LOG_DIR" "$APP_DIR/data"
 
@@ -35,7 +36,17 @@ echo "[deploy] Migrating database..."
 corepack pnpm db:migrate
 
 echo "[deploy] Stopping previous API process..."
-pkill -f "poco-cloud.*apps/api" >/dev/null 2>&1 || true
+if [ -f "$API_PID_FILE" ]; then
+  API_PID="$(cat "$API_PID_FILE" 2>/dev/null || true)"
+  if [ -n "${API_PID:-}" ] && kill -0 "$API_PID" >/dev/null 2>&1; then
+    kill "$API_PID" >/dev/null 2>&1 || true
+    sleep 2
+  fi
+fi
+
+pkill -f "@poco-cloud/api.*start" >/dev/null 2>&1 || true
+pkill -f "node dist/index.js" >/dev/null 2>&1 || true
+sleep 1
 
 echo "[deploy] Starting API in background..."
 export NODE_ENV=production
@@ -43,10 +54,11 @@ export APP_DIR JWT_SECRET DB_PATH FILES_ROOT LOG_DIR HOST PORT WEB_ORIGIN
 export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
 
 nohup corepack pnpm start >> "$API_LOG" 2>&1 &
+echo "$!" > "$API_PID_FILE"
 
 sleep 2
 
-if pgrep -f "poco-cloud.*apps/api" >/dev/null 2>&1; then
+if kill -0 "$(cat "$API_PID_FILE")" >/dev/null 2>&1; then
   echo "[deploy] Poco Cloud is running."
   echo "[deploy] Logs: $API_LOG"
 else
