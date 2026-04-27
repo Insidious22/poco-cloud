@@ -40,5 +40,5 @@ export const migrate = (): void => {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   migrate();
-  console.log(`Migrated database at ${db.name}`);
+  console.log("Migrated database");
 }
