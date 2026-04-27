@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 loadEnv();
 
 const apiRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const repoRoot = resolve(apiRoot, "..", "..", "..");
+const repoRoot = resolve(apiRoot, "..", "..");
 
 const expandHome = (value: string): string => {
   if (value === "~") return homedir();
