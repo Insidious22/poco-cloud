@@ -1,0 +1,21 @@
+{
+  "name": "poco-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mini nube personal para un Poco F3 con Termux, Fastify, React, SQLite, Caddy y frp.",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "install:all": "corepack pnpm install",
+    "dev": "corepack pnpm -r --parallel dev",
+    "dev:api": "corepack pnpm --filter @poco-cloud/api dev",
+    "dev:web": "corepack pnpm --filter @poco-cloud/web dev",
+    "build": "corepack pnpm -r build",
+    "start": "corepack pnpm --filter @poco-cloud/api start",
+    "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm -r typecheck",
+    "db:migrate": "corepack pnpm --filter @poco-cloud/api db:migrate"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

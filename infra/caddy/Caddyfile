@@ -1,0 +1,10 @@
+167-234-251-177.sslip.io {
+    encode zstd gzip
+    reverse_proxy 127.0.0.1:8080
+}
+
+# Dominio propio:
+# nube.tudominio.com {
+#     encode zstd gzip
+#     reverse_proxy 127.0.0.1:8080
+# }

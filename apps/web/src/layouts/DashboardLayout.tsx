@@ -1,0 +1,69 @@
+import { BarChart3, FileText, Folder, LogOut, Server, Settings, Shield } from "lucide-react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth.js";
+import { Button } from "../components/ui/Button.js";
+
+const navItems = [
+  { href: "/", label: "Dashboard", icon: BarChart3 },
+  { href: "/services", label: "Servicios", icon: Server },
+  { href: "/files", label: "Archivos", icon: Folder },
+  { href: "/logs", label: "Logs", icon: FileText },
+  { href: "/system", label: "Sistema", icon: Settings }
+];
+
+export const DashboardLayout = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
+  return (
+    <div className="min-h-screen lg:flex">
+      <aside className="border-b border-line bg-ink/75 backdrop-blur lg:fixed lg:inset-y-0 lg:w-72 lg:border-b-0 lg:border-r">
+        <div className="flex h-16 items-center gap-3 px-5">
+          <div className="grid h-9 w-9 place-items-center rounded-md bg-cyanGlow text-ink">
+            <Shield className="h-5 w-5" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-100">Poco Cloud</p>
+            <p className="text-xs text-slate-500">Personal control plane</p>
+          </div>
+        </div>
+        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1 lg:overflow-visible">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.href}
+              to={item.href}
+              className={({ isActive }) =>
+                `flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition ${
+                  isActive ? "bg-cyanGlow/12 text-cyanGlow" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
+                }`
+              }
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+      </aside>
+      <main className="min-w-0 flex-1 lg:ml-72">
+        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-ink/75 px-5 backdrop-blur">
+          <div>
+            <p className="text-xs uppercase tracking-widest text-cyanGlow">Secure session</p>
+            <h1 className="text-base font-semibold text-slate-100">{user?.displayName}</h1>
+          </div>
+          <Button variant="ghost" onClick={handleLogout}>
+            <LogOut className="h-4 w-4" />
+            Salir
+          </Button>
+        </header>
+        <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
+          <Outlet />
+        </div>
+      </main>
+    </div>
+  );
+};

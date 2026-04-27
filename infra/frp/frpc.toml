@@ -1,0 +1,18 @@
+serverAddr = "YOUR_VPS_IP"
+serverPort = 7000
+auth.method = "token"
+auth.token = "CHANGE_ME_TO_THE_SAME_TOKEN_AS_FRPS"
+
+[[proxies]]
+name = "poco-cloud-web"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8080
+remotePort = 8080
+
+[[proxies]]
+name = "termux-ssh"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 8022
+remotePort = 2222
