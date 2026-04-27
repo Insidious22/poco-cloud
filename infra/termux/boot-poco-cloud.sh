@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/sh
 termux-wake-lock || true
+sshd || true
 sleep 20
 
 pkill -f "poco-cloud.*apps/api" || true

@@ -28,6 +28,6 @@ export NODE_ENV=production
 export HOST PORT WEB_ORIGIN JWT_SECRET DB_PATH FILES_ROOT LOG_DIR
 export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
 
-pnpm db:migrate >> "$LOG_DIR/api.log" 2>&1 || true
+corepack pnpm db:migrate >> "$LOG_DIR/api.log" 2>&1 || true
 echo "$$" > "$API_PID_FILE"
-exec pnpm start >> "$LOG_DIR/api.log" 2>&1
+exec corepack pnpm start >> "$LOG_DIR/api.log" 2>&1
