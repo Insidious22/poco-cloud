@@ -6,6 +6,16 @@ export type ServiceName = (typeof serviceNames)[number];
 export const logNames = ["api", "frpc", "web", "jellyfin", "filebrowser"] as const;
 export type LogName = (typeof logNames)[number];
 
+export const systemActionNames = [
+  "wake-lock",
+  "wake-unlock",
+  "start-sshd",
+  "restart-frpc",
+  "clear-api-log",
+  "clear-frpc-log"
+] as const;
+export type SystemActionName = (typeof systemActionNames)[number];
+
 export const loginSchema = z.object({
   username: z.string().trim().min(3).max(64),
   password: z.string().min(8).max(256)
@@ -69,6 +79,44 @@ export interface SystemStatus {
     detected: boolean;
     wakeLockHint: string;
   };
+}
+
+export interface SystemDiagnosticItem {
+  key: string;
+  label: string;
+  status: "ok" | "warning" | "error";
+  value: string;
+  detail?: string;
+}
+
+export interface SystemDiagnostics {
+  checkedAt: string;
+  termux: {
+    detected: boolean;
+    prefix: string | null;
+    home: string;
+  };
+  processes: Array<{
+    name: "api" | "frpc" | "sshd";
+    running: boolean;
+    pid: number | null;
+    detail: string;
+  }>;
+  files: SystemDiagnosticItem[];
+}
+
+export interface SystemConfigFile {
+  key: "frpc" | "env" | "boot";
+  label: string;
+  path: string;
+  exists: boolean;
+  content: string;
+}
+
+export interface SystemActionResponse {
+  ok: boolean;
+  action: SystemActionName;
+  message: string;
 }
 
 export interface ManagedService {

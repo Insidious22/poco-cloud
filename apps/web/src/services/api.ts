@@ -1,4 +1,11 @@
-import type { AuthResponse, LogName } from "@poco-cloud/shared";
+import type {
+  AuthResponse,
+  LogName,
+  SystemActionName,
+  SystemActionResponse,
+  SystemConfigFile,
+  SystemDiagnostics
+} from "@poco-cloud/shared";
 import axios from "axios";
 
 const api = axios.create({
@@ -50,6 +57,22 @@ export const apiClient = {
   },
   systemStatus: async () => {
     const { data } = await api.get("/api/system/status");
+    return data;
+  },
+  systemDiagnostics: async () => {
+    const { data } = await api.get<SystemDiagnostics>("/api/system/diagnostics");
+    return data;
+  },
+  systemConfig: async () => {
+    const { data } = await api.get<SystemConfigFile[]>("/api/system/config");
+    return data;
+  },
+  bootLogs: async () => {
+    const { data } = await api.get<{ service: "boot"; lines: string[] }>("/api/system/logs/boot");
+    return data;
+  },
+  systemAction: async (action: SystemActionName) => {
+    const { data } = await api.post<SystemActionResponse>(`/api/system/actions/${action}`);
     return data;
   },
   services: async () => {
