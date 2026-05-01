@@ -17,6 +17,11 @@ LOG_DIR="${LOG_DIR:-$HOME}"
 API_LOG="$LOG_DIR/api.log"
 API_PID_FILE="$LOG_DIR/poco-cloud-api.pid"
 
+export NODE_ENV=production
+export APP_DIR JWT_SECRET DB_PATH FILES_ROOT LOG_DIR HOST PORT WEB_ORIGIN
+export SSH_PUBLIC_HOST SSH_PUBLIC_PORT ALLOW_REGISTRATION ALLOW_FILE_DELETE EXPOSE_CONFIG_CONTENT
+export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
+
 mkdir -p "$LOG_DIR" "$APP_DIR/data" "${FILES_ROOT:-$APP_DIR/storage}"
 
 termux-wake-lock >/dev/null 2>&1 || true
@@ -49,11 +54,6 @@ pkill -f "node dist/index.js" >/dev/null 2>&1 || true
 sleep 1
 
 echo "[deploy] Starting API in background..."
-export NODE_ENV=production
-export APP_DIR JWT_SECRET DB_PATH FILES_ROOT LOG_DIR HOST PORT WEB_ORIGIN
-export SSH_PUBLIC_HOST SSH_PUBLIC_PORT ALLOW_REGISTRATION ALLOW_FILE_DELETE EXPOSE_CONFIG_CONTENT
-export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
-
 nohup corepack pnpm start >> "$API_LOG" 2>&1 &
 echo "$!" > "$API_PID_FILE"
 
