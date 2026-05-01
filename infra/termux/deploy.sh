@@ -51,6 +51,7 @@ sleep 1
 echo "[deploy] Starting API in background..."
 export NODE_ENV=production
 export APP_DIR JWT_SECRET DB_PATH FILES_ROOT LOG_DIR HOST PORT WEB_ORIGIN
+export SSH_PUBLIC_HOST SSH_PUBLIC_PORT ALLOW_REGISTRATION ALLOW_FILE_DELETE EXPOSE_CONFIG_CONTENT
 export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
 
 nohup corepack pnpm start >> "$API_LOG" 2>&1 &
