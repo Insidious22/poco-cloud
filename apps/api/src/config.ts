@@ -30,6 +30,8 @@ export const appConfig = {
   filesRoot: resolveFromApi(process.env.FILES_ROOT ?? "~"),
   logDir: resolveFromApi(process.env.LOG_DIR ?? "~"),
   serviceScriptDir: resolveFromApi(process.env.SERVICE_SCRIPT_DIR ?? "~/poco-cloud/services"),
+  sshPublicHost: process.env.SSH_PUBLIC_HOST,
+  sshPublicPort: Number(process.env.SSH_PUBLIC_PORT ?? 2222),
   repoRoot,
   isTermux: process.env.PREFIX?.includes("com.termux") ?? false
 };

@@ -38,6 +38,11 @@ export const deleteFileSchema = z.object({
   path: z.string().trim().min(1).max(2048)
 });
 
+export const sshPublicKeySchema = z.object({
+  label: z.string().trim().min(2).max(80),
+  publicKey: z.string().trim().min(80).max(4096)
+});
+
 export interface AuthUser {
   id: string;
   username: string;
@@ -117,6 +122,24 @@ export interface SystemActionResponse {
   ok: boolean;
   action: SystemActionName;
   message: string;
+}
+
+export interface AuthorizedSshKey {
+  id: string;
+  label: string;
+  type: string;
+  fingerprint: string;
+  comment: string;
+  createdFromLine: string;
+}
+
+export interface SshAccessOverview {
+  user: string;
+  host: string;
+  port: number;
+  command: string;
+  authorizedKeysPath: string;
+  keys: AuthorizedSshKey[];
 }
 
 export interface ManagedService {

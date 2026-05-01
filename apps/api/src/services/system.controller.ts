@@ -1,5 +1,8 @@
 import {
+  sshPublicKeySchema,
   systemActionNames,
+  type AuthorizedSshKey,
+  type SshAccessOverview,
   type SystemActionName,
   type SystemActionResponse,
   type SystemConfigFile,
@@ -7,7 +10,8 @@ import {
   type SystemStatus
 } from "@poco-cloud/shared";
 import type { FastifyInstance } from "fastify";
-import { access, readFile, stat, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { access, chmod, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { cpus, hostname, loadavg, networkInterfaces, platform, totalmem, freemem, uptime, homedir } from "node:os";
 import { join } from "node:path";
 import { appConfig } from "../config.js";
@@ -145,6 +149,91 @@ const ensureFileExists = async (path: string): Promise<boolean> => {
   }
 };
 
+const sshDir = () => join(homedir(), ".ssh");
+const authorizedKeysPath = () => join(sshDir(), "authorized_keys");
+const supportedKeyTypes = new Set(["ssh-ed25519", "ssh-rsa", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384", "ecdsa-sha2-nistp521", "sk-ssh-ed25519@openssh.com"]);
+
+const normalizeAuthorizedKey = (value: string, label: string): string => {
+  const firstLine = value
+    .split("\n")
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  if (!firstLine) {
+    throw new Error("La llave publica esta vacia");
+  }
+
+  const parts = firstLine.replace(/\s+/g, " ").split(" ");
+  const keyIndex = parts.findIndex((part) => supportedKeyTypes.has(part));
+  if (keyIndex < 0 || !parts[keyIndex + 1]) {
+    throw new Error("Formato de llave SSH no soportado");
+  }
+
+  const type = parts[keyIndex] as string;
+  const body = parts[keyIndex + 1] as string;
+  if (!/^[A-Za-z0-9+/]+={0,3}$/.test(body)) {
+    throw new Error("La llave publica no parece estar en base64 valido");
+  }
+
+  const comment = parts.slice(keyIndex + 2).join(" ") || label;
+  return `${type} ${body} ${comment}`.trim();
+};
+
+const keyFingerprint = (line: string): string => {
+  const parts = line.replace(/\s+/g, " ").split(" ");
+  const keyIndex = parts.findIndex((part) => supportedKeyTypes.has(part));
+  const body = parts[keyIndex + 1] ?? "";
+  try {
+    return `SHA256:${createHash("sha256").update(Buffer.from(body, "base64")).digest("base64").replace(/=+$/, "")}`;
+  } catch {
+    return "SHA256:unknown";
+  }
+};
+
+const keyId = (line: string): string => createHash("sha256").update(line).digest("hex").slice(0, 16);
+
+const parseAuthorizedKey = (line: string): AuthorizedSshKey | null => {
+  const trimmed = line.trim();
+  if (!trimmed || trimmed.startsWith("#")) return null;
+  const parts = trimmed.replace(/\s+/g, " ").split(" ");
+  const keyIndex = parts.findIndex((part) => supportedKeyTypes.has(part));
+  if (keyIndex < 0) return null;
+  const comment = parts.slice(keyIndex + 2).join(" ");
+  return {
+    id: keyId(trimmed),
+    label: comment || "Sin etiqueta",
+    type: parts[keyIndex] as string,
+    fingerprint: keyFingerprint(trimmed),
+    comment,
+    createdFromLine: trimmed
+  };
+};
+
+const readAuthorizedKeys = async (): Promise<{ lines: string[]; keys: AuthorizedSshKey[] }> => {
+  try {
+    const content = await readFile(authorizedKeysPath(), "utf8");
+    const lines = content.split("\n").map((line) => line.trim()).filter(Boolean);
+    return { lines, keys: lines.map(parseAuthorizedKey).filter((key): key is AuthorizedSshKey => Boolean(key)) };
+  } catch {
+    return { lines: [], keys: [] };
+  }
+};
+
+const ensureSshFiles = async (): Promise<void> => {
+  await mkdir(sshDir(), { recursive: true });
+  await chmod(sshDir(), 0o700).catch(() => undefined);
+  if (!(await ensureFileExists(authorizedKeysPath()))) {
+    await writeFile(authorizedKeysPath(), "", "utf8");
+  }
+  await chmod(authorizedKeysPath(), 0o600).catch(() => undefined);
+};
+
+const sshHostFromRequest = (requestHost?: string): string => {
+  const configured = appConfig.sshPublicHost?.trim();
+  if (configured) return configured;
+  return (requestHost ?? "YOUR_VPS_IP").split(":")[0] ?? "YOUR_VPS_IP";
+};
+
 export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/api/system/status", { preHandler: requireAuth }, async (): Promise<SystemStatus> => {
     const freeMb = Math.round(freemem() / 1024 / 1024);
@@ -211,6 +300,69 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
     service: "boot",
     lines: await readTail(join(homedir(), "boot-poco-cloud.log"))
   }));
+
+  fastify.get("/api/system/ssh/access", { preHandler: requireAuth }, async (request): Promise<SshAccessOverview> => {
+    await ensureSshFiles();
+    const { keys } = await readAuthorizedKeys();
+    const host = sshHostFromRequest(request.headers.host);
+    const user = process.env.USER ?? homedir().split("/").at(-1) ?? "u0_a369";
+
+    return {
+      user,
+      host,
+      port: appConfig.sshPublicPort,
+      command: `ssh -p ${appConfig.sshPublicPort} ${user}@${host}`,
+      authorizedKeysPath: authorizedKeysPath(),
+      keys
+    };
+  });
+
+  fastify.post<{ Body: { label: string; publicKey: string } }>(
+    "/api/system/ssh/keys",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      const parsed = sshPublicKeySchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ message: parsed.error.issues[0]?.message ?? "Llave publica invalida" });
+      }
+
+      await ensureSshFiles();
+      let normalized: string;
+      try {
+        normalized = normalizeAuthorizedKey(parsed.data.publicKey, parsed.data.label);
+      } catch (error) {
+        return reply.code(400).send({ message: (error as Error).message });
+      }
+
+      const { lines } = await readAuthorizedKeys();
+      const incomingFingerprint = keyFingerprint(normalized);
+      const alreadyExists = lines.some((line) => keyFingerprint(line) === incomingFingerprint);
+      if (alreadyExists) {
+        return reply.code(409).send({ message: "Esa llave SSH ya esta autorizada" });
+      }
+
+      const lineWithLabel = `${normalized} poco-cloud:${parsed.data.label.replace(/\s+/g, "-")}`;
+      await writeFile(authorizedKeysPath(), `${[...lines, lineWithLabel].join("\n")}\n`, "utf8");
+      await chmod(authorizedKeysPath(), 0o600).catch(() => undefined);
+      return { ok: true, key: parseAuthorizedKey(lineWithLabel) };
+    }
+  );
+
+  fastify.delete<{ Params: { id: string } }>(
+    "/api/system/ssh/keys/:id",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      await ensureSshFiles();
+      const { lines } = await readAuthorizedKeys();
+      const nextLines = lines.filter((line) => keyId(line) !== request.params.id);
+      if (nextLines.length === lines.length) {
+        return reply.code(404).send({ message: "Llave SSH no encontrada" });
+      }
+      await writeFile(authorizedKeysPath(), `${nextLines.join("\n")}${nextLines.length ? "\n" : ""}`, "utf8");
+      await chmod(authorizedKeysPath(), 0o600).catch(() => undefined);
+      return { ok: true };
+    }
+  );
 
   fastify.post<{ Params: { action: SystemActionName } }>(
     "/api/system/actions/:action",

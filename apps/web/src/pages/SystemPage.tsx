@@ -1,4 +1,6 @@
 import type {
+  AuthorizedSshKey,
+  SshAccessOverview,
   SystemActionName,
   SystemConfigFile,
   SystemDiagnostics,
@@ -10,13 +12,16 @@ import {
   Cable,
   Eraser,
   FileCode2,
+  KeyRound,
   Lock,
+  Plus,
   Power,
   RefreshCw,
   RotateCcw,
   Server,
   ShieldCheck,
   Terminal,
+  Trash2,
   Unlock
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -81,24 +86,45 @@ const ConfigBlock = ({ file }: { file: SystemConfigFile }) => (
   </div>
 );
 
+const KeyRow = ({ item, onDelete }: { item: AuthorizedSshKey; onDelete: (id: string) => void }) => (
+  <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line bg-ink/60 px-4 py-3">
+    <div className="min-w-0">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="font-semibold text-slate-100">{item.label}</p>
+        <Badge tone="neutral">{item.type}</Badge>
+      </div>
+      <p className="mt-1 truncate text-xs text-slate-500">{item.fingerprint}</p>
+    </div>
+    <Button variant="ghost" onClick={() => onDelete(item.id)}>
+      <Trash2 className="h-4 w-4" />
+      Quitar
+    </Button>
+  </div>
+);
+
 export const SystemPage = () => {
   const [diagnostics, setDiagnostics] = useState<SystemDiagnostics | null>(null);
   const [configs, setConfigs] = useState<SystemConfigFile[]>([]);
+  const [sshAccess, setSshAccess] = useState<SshAccessOverview | null>(null);
   const [bootLog, setBootLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<SystemActionName | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sshLabel, setSshLabel] = useState("");
+  const [sshPublicKey, setSshPublicKey] = useState("");
 
   const load = async (silent = false) => {
     if (!silent) setLoading(true);
-    const [diagnosticsResponse, configResponse, bootLogResponse] = await Promise.all([
+    const [diagnosticsResponse, configResponse, bootLogResponse, sshAccessResponse] = await Promise.all([
       apiClient.systemDiagnostics(),
       apiClient.systemConfig(),
-      apiClient.bootLogs()
+      apiClient.bootLogs(),
+      apiClient.sshAccess()
     ]);
     setDiagnostics(diagnosticsResponse);
     setConfigs(configResponse);
     setBootLog(bootLogResponse.lines);
+    setSshAccess(sshAccessResponse);
     setLoading(false);
   };
 
@@ -112,6 +138,39 @@ export const SystemPage = () => {
       setNotice("No se pudo ejecutar la accion");
     } finally {
       setBusyAction(null);
+    }
+  };
+
+  const copySshCommand = async () => {
+    if (!sshAccess) return;
+    await navigator.clipboard.writeText(sshAccess.command);
+    setNotice("Comando SSH copiado");
+  };
+
+  const addSshKey = async () => {
+    if (!sshLabel.trim() || !sshPublicKey.trim()) {
+      setNotice("Escribe una etiqueta y pega una llave publica");
+      return;
+    }
+
+    try {
+      await apiClient.addSshKey(sshLabel, sshPublicKey);
+      setSshLabel("");
+      setSshPublicKey("");
+      setNotice("Llave SSH autorizada");
+      await load(true);
+    } catch {
+      setNotice("No se pudo agregar la llave SSH");
+    }
+  };
+
+  const deleteSshKey = async (id: string) => {
+    try {
+      await apiClient.deleteSshKey(id);
+      setNotice("Llave SSH eliminada");
+      await load(true);
+    } catch {
+      setNotice("No se pudo eliminar la llave SSH");
     }
   };
 
@@ -221,6 +280,73 @@ export const SystemPage = () => {
           </div>
         </Card>
       </div>
+
+      <Card>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-cyanGlow" />
+            <div>
+              <h3 className="text-lg font-semibold text-slate-100">Acceso SSH</h3>
+              <p className="text-sm text-slate-500">Autoriza laptops con su llave publica, sin compartir llaves privadas.</p>
+            </div>
+          </div>
+          <Button variant="secondary" onClick={() => void copySshCommand()} disabled={!sshAccess}>
+            <Terminal className="h-4 w-4" />
+            Copiar comando
+          </Button>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-4">
+            <div className="rounded-md border border-line bg-ink/60 p-4">
+              <p className="text-sm text-slate-400">Comando generico</p>
+              <pre className="mt-3 overflow-auto rounded-md bg-black/30 p-3 text-xs text-cyan-100">
+                {sshAccess?.command ?? "Leyendo acceso SSH..."}
+              </pre>
+              <p className="mt-3 text-xs text-slate-500">
+                Cada laptop debe tener su propia llave publica agregada aqui.
+              </p>
+            </div>
+
+            <div className="rounded-md border border-line bg-ink/60 p-4">
+              <label className="text-sm font-medium text-slate-300" htmlFor="ssh-label">
+                Etiqueta
+              </label>
+              <input
+                id="ssh-label"
+                value={sshLabel}
+                onChange={(event) => setSshLabel(event.target.value)}
+                placeholder="Laptop trabajo"
+                className="mt-2 h-11 w-full rounded-md border border-line bg-ink/70 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyanGlow focus:ring-2 focus:ring-cyanGlow/20"
+              />
+              <label className="mt-4 block text-sm font-medium text-slate-300" htmlFor="ssh-key">
+                Llave publica
+              </label>
+              <textarea
+                id="ssh-key"
+                value={sshPublicKey}
+                onChange={(event) => setSshPublicKey(event.target.value)}
+                placeholder="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA..."
+                className="mt-2 min-h-28 w-full resize-y rounded-md border border-line bg-ink/70 px-3 py-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyanGlow focus:ring-2 focus:ring-cyanGlow/20"
+              />
+              <Button className="mt-3" onClick={() => void addSshKey()}>
+                <Plus className="h-4 w-4" />
+                Autorizar laptop
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            {(sshAccess?.keys ?? []).length ? (
+              sshAccess?.keys.map((key) => <KeyRow key={key.id} item={key} onDelete={deleteSshKey} />)
+            ) : (
+              <div className="rounded-md border border-line bg-ink/60 p-4 text-sm text-slate-400">
+                No hay llaves SSH registradas todavia.
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>

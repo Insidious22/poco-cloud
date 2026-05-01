@@ -1,5 +1,6 @@
 import type {
   AuthResponse,
+  SshAccessOverview,
   LogName,
   SystemActionName,
   SystemActionResponse,
@@ -69,6 +70,18 @@ export const apiClient = {
   },
   bootLogs: async () => {
     const { data } = await api.get<{ service: "boot"; lines: string[] }>("/api/system/logs/boot");
+    return data;
+  },
+  sshAccess: async () => {
+    const { data } = await api.get<SshAccessOverview>("/api/system/ssh/access");
+    return data;
+  },
+  addSshKey: async (label: string, publicKey: string) => {
+    const { data } = await api.post("/api/system/ssh/keys", { label, publicKey });
+    return data;
+  },
+  deleteSshKey: async (id: string) => {
+    const { data } = await api.delete(`/api/system/ssh/keys/${id}`);
     return data;
   },
   systemAction: async (action: SystemActionName) => {
