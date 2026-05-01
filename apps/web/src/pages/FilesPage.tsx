@@ -1,5 +1,5 @@
 import type { FileEntry } from "@poco-cloud/shared";
-import { FolderPlus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { FolderPlus, RefreshCw, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
@@ -35,14 +35,12 @@ export const FilesPage = () => {
     await load();
   };
 
-  const remove = async (target: string) => {
-    await apiClient.deletePath(target);
-    await load();
-  };
-
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-semibold text-slate-50">Archivos</h2>
+      <div className="rounded-md border border-cyanGlow/25 bg-cyanGlow/10 px-4 py-3 text-sm text-cyan-100">
+        El explorador esta limitado a la carpeta privada de Poco Cloud. El borrado remoto esta desactivado por seguridad.
+      </div>
       <Card>
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
           <Input value={path} onChange={(event) => setPath(event.target.value)} />
@@ -67,7 +65,7 @@ export const FilesPage = () => {
       <Card className="overflow-hidden p-0">
         <div className="divide-y divide-line">
           {entries.map((entry) => (
-            <div key={entry.path} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 px-4 py-3">
+            <div key={entry.path} className="grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3">
               <button
                 className="min-w-0 text-left"
                 onClick={() => {
@@ -78,9 +76,6 @@ export const FilesPage = () => {
                 <p className="truncate text-xs text-slate-500">{entry.path}</p>
               </button>
               <Badge tone={entry.type === "directory" ? "warning" : "neutral"}>{entry.type}</Badge>
-              <Button variant="ghost" className="h-9 w-9 px-0 text-rose-300" onClick={() => void remove(entry.path)} aria-label="Borrar">
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
           ))}
         </div>

@@ -27,11 +27,14 @@ export const appConfig = {
   jwtSecret: process.env.JWT_SECRET ?? "dev-only-change-me",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
   dbPath: resolveFromApi(process.env.DB_PATH ?? "../../data/poco-cloud.sqlite"),
-  filesRoot: resolveFromApi(process.env.FILES_ROOT ?? "~"),
+  filesRoot: resolveFromApi(process.env.FILES_ROOT ?? "~/poco-cloud/storage"),
   logDir: resolveFromApi(process.env.LOG_DIR ?? "~"),
   serviceScriptDir: resolveFromApi(process.env.SERVICE_SCRIPT_DIR ?? "~/poco-cloud/services"),
   sshPublicHost: process.env.SSH_PUBLIC_HOST,
   sshPublicPort: Number(process.env.SSH_PUBLIC_PORT ?? 2222),
+  allowRegistration: process.env.ALLOW_REGISTRATION === "true",
+  allowFileDelete: process.env.ALLOW_FILE_DELETE === "true",
+  exposeConfigContent: process.env.EXPOSE_CONFIG_CONTENT === "true",
   repoRoot,
   isTermux: process.env.PREFIX?.includes("com.termux") ?? false
 };

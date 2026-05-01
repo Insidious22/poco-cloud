@@ -22,6 +22,11 @@ export const findUserById = (id: string): AuthUser | null => {
   return row ? toAuthUser(row) : null;
 };
 
+export const countUsers = (): number => {
+  const row = db.prepare("SELECT COUNT(*) AS total FROM users").get() as { total: number };
+  return row.total;
+};
+
 export const registerUser = async (
   fastify: FastifyInstance,
   input: { username: string; password: string; displayName?: string | undefined }

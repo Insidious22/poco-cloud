@@ -129,7 +129,15 @@ const configFiles = async (): Promise<SystemConfigFile[]> => {
   return Promise.all(
     files.map(async (file) => {
       const result = await readSafeText(file.path);
-      return { ...file, ...result };
+      return {
+        ...file,
+        exists: result.exists,
+        content: appConfig.exposeConfigContent
+          ? result.content
+          : result.exists
+            ? "Contenido oculto por seguridad. Activa EXPOSE_CONFIG_CONTENT=true solo durante mantenimiento."
+            : ""
+      };
     })
   );
 };

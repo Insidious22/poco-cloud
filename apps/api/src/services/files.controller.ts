@@ -79,6 +79,9 @@ export const filesRoutes = async (fastify: FastifyInstance): Promise<void> => {
     async (request: FastifyRequest, reply: FastifyReply) => {
       const parsed = deleteFileSchema.safeParse(request.body);
       if (!parsed.success) return reply.code(400).send({ message: "Invalid delete payload" });
+      if (!appConfig.allowFileDelete) {
+        return reply.code(403).send({ message: "File deletion is disabled" });
+      }
 
       const target = resolveSafePath(parsed.data.path);
       await rm(target, { recursive: true, force: true });
