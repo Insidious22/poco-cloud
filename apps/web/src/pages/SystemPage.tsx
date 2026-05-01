@@ -110,6 +110,7 @@ export const SystemPage = () => {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<SystemActionName | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [securityPassword, setSecurityPassword] = useState("");
   const [sshLabel, setSshLabel] = useState("");
   const [sshPublicKey, setSshPublicKey] = useState("");
 
@@ -129,9 +130,14 @@ export const SystemPage = () => {
   };
 
   const runAction = async (action: SystemActionName) => {
+    if (!securityPassword) {
+      setNotice("Confirma tu contrasena para ejecutar acciones sensibles");
+      return;
+    }
+
     setBusyAction(action);
     try {
-      const response = await apiClient.systemAction(action);
+      const response = await apiClient.systemAction(action, securityPassword);
       setNotice(response.message);
       await load(true);
     } catch {
@@ -152,9 +158,13 @@ export const SystemPage = () => {
       setNotice("Escribe una etiqueta y pega una llave publica");
       return;
     }
+    if (!securityPassword) {
+      setNotice("Confirma tu contrasena para autorizar llaves SSH");
+      return;
+    }
 
     try {
-      await apiClient.addSshKey(sshLabel, sshPublicKey);
+      await apiClient.addSshKey(sshLabel, sshPublicKey, securityPassword);
       setSshLabel("");
       setSshPublicKey("");
       setNotice("Llave SSH autorizada");
@@ -165,8 +175,13 @@ export const SystemPage = () => {
   };
 
   const deleteSshKey = async (id: string) => {
+    if (!securityPassword) {
+      setNotice("Confirma tu contrasena para quitar llaves SSH");
+      return;
+    }
+
     try {
-      await apiClient.deleteSshKey(id);
+      await apiClient.deleteSshKey(id, securityPassword);
       setNotice("Llave SSH eliminada");
       await load(true);
     } catch {
@@ -257,7 +272,21 @@ export const SystemPage = () => {
             </div>
             <Power className="h-5 w-5 text-cyanGlow" />
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="mb-4 rounded-md border border-line bg-ink/60 p-4">
+            <label className="text-sm font-medium text-slate-300" htmlFor="security-password">
+              Confirmacion
+            </label>
+            <input
+              id="security-password"
+              value={securityPassword}
+              onChange={(event) => setSecurityPassword(event.target.value)}
+              type="password"
+              autoComplete="current-password"
+              placeholder="Contrasena de Poco Cloud"
+              className="mt-2 h-11 w-full rounded-md border border-line bg-ink/70 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyanGlow focus:ring-2 focus:ring-cyanGlow/20"
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {actionGroups.map((group) => (
               <div key={group.title} className="rounded-md border border-line bg-ink/60 p-4">
                 <h4 className="font-semibold text-slate-100">{group.title}</h4>

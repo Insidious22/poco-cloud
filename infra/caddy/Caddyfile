@@ -1,4 +1,4 @@
-167-234-251-177.sslip.io {
+YOUR_DOMAIN {
     encode zstd gzip
     reverse_proxy 127.0.0.1:8080
 }

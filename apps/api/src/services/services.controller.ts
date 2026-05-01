@@ -1,10 +1,11 @@
-import type { ManagedService, ServiceName } from "@poco-cloud/shared";
+import { confirmPasswordSchema, type ManagedService, type ServiceName } from "@poco-cloud/shared";
 import { serviceNames } from "@poco-cloud/shared";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { homedir } from "node:os";
 import { appConfig } from "../config.js";
+import { verifyUserPassword } from "../auth/auth.service.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
-import { runControlled, spawnControlled } from "../utils/exec.js";
+import { runControlled, spawnControlled, spawnScript } from "../utils/exec.js";
 
 interface ServiceDefinition {
   name: ServiceName;
@@ -23,9 +24,9 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Tunel inverso del Poco F3 hacia el VPS.",
     pattern: "frpc",
     logName: "frpc",
-    start: () => spawnControlled("frpc", ["-c", `${homedir()}/frpc.toml`]),
+  start: () => spawnControlled("frpc", ["-c", `${homedir()}/frpc.toml`]),
     stop: async () => {
-      await runControlled("pkill", ["-f", "frpc"]);
+      await runControlled("pkill", ["-f", "frpc.*-c.*/frpc.toml"]);
     }
   },
   api: {
@@ -34,7 +35,7 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Backend principal del panel de control.",
     pattern: "poco-cloud.*apps/api",
     logName: "api",
-    start: () => spawnControlled("sh", [`${appConfig.serviceScriptDir}/start-api.sh`]),
+    start: () => spawnScript("start-api"),
     stop: async () => {
       await runControlled("pkill", ["-f", "poco-cloud.*apps/api"]);
     }
@@ -82,6 +83,22 @@ const parseServiceName = (request: FastifyRequest): ServiceName | null => {
   return serviceNames.includes(name as ServiceName) ? (name as ServiceName) : null;
 };
 
+const confirmPassword = async (request: FastifyRequest, reply: FastifyReply): Promise<boolean> => {
+  const parsed = confirmPasswordSchema.safeParse(request.body);
+  if (!parsed.success || !request.currentUser) {
+    reply.code(400).send({ message: "Password confirmation is required" });
+    return false;
+  }
+
+  const valid = await verifyUserPassword(request.currentUser.id, parsed.data.password);
+  if (!valid) {
+    reply.code(403).send({ message: "Password confirmation failed" });
+    return false;
+  }
+
+  return true;
+};
+
 export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/api/services", { preHandler: requireAuth }, async () => {
     return Promise.all(Object.values(serviceDefinitions).map(getServiceStatus));
@@ -93,6 +110,7 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
     async (request: FastifyRequest, reply: FastifyReply) => {
       const name = parseServiceName(request);
       if (!name) return reply.code(404).send({ message: "Unknown service" });
+      if (!(await confirmPassword(request, reply))) return reply;
 
       const service = serviceDefinitions[name];
       const pid = service.start();
@@ -106,6 +124,7 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
     async (request: FastifyRequest, reply: FastifyReply) => {
       const name = parseServiceName(request);
       if (!name) return reply.code(404).send({ message: "Unknown service" });
+      if (!(await confirmPassword(request, reply))) return reply;
 
       await serviceDefinitions[name].stop();
       return { message: "Service stop requested", service: name };

@@ -19,13 +19,46 @@ const resolveFromApi = (value: string): string => {
   return isAbsolute(expanded) ? expanded : resolve(apiRoot, expanded);
 };
 
+const parseDurationMs = (value: string): number => {
+  const match = value.trim().match(/^(\d+)([smhd])?$/i);
+  if (!match) return 7 * 24 * 60 * 60 * 1000;
+  const amount = Number(match[1]);
+  const unit = (match[2] ?? "s").toLowerCase();
+  const multipliers: Record<string, number> = {
+    s: 1000,
+    m: 60 * 1000,
+    h: 60 * 60 * 1000,
+    d: 24 * 60 * 60 * 1000
+  };
+  return amount * (multipliers[unit] ?? 1000);
+};
+
+const nodeEnv = process.env.NODE_ENV ?? "development";
+const rawJwtSecret = process.env.JWT_SECRET;
+const weakSecret =
+  !rawJwtSecret ||
+  rawJwtSecret.length < 32 ||
+  /change|dev-only|secret|password/i.test(rawJwtSecret);
+
+if (nodeEnv === "production" && weakSecret) {
+  throw new Error("JWT_SECRET is missing or weak. Set a random 32+ character secret before starting Poco Cloud.");
+}
+
+if (nodeEnv !== "production" && weakSecret) {
+  console.warn("[poco-cloud] Using a development JWT secret. Do not expose this server publicly.");
+}
+
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN ?? "7d";
+
 export const appConfig = {
-  nodeEnv: process.env.NODE_ENV ?? "development",
+  nodeEnv,
   host: process.env.HOST ?? "0.0.0.0",
   port: Number(process.env.PORT ?? 8080),
   webOrigin: process.env.WEB_ORIGIN ?? "http://localhost:5173",
-  jwtSecret: process.env.JWT_SECRET ?? "dev-only-change-me",
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? "7d",
+  jwtSecret: rawJwtSecret ?? "local-development-only-secret-please-change",
+  jwtExpiresIn,
+  jwtExpiresInMs: parseDurationMs(jwtExpiresIn),
+  authCookieName: process.env.AUTH_COOKIE_NAME ?? "poco_cloud_session",
   dbPath: resolveFromApi(process.env.DB_PATH ?? "../../data/poco-cloud.sqlite"),
   filesRoot: resolveFromApi(process.env.FILES_ROOT ?? "~/poco-cloud/storage"),
   logDir: resolveFromApi(process.env.LOG_DIR ?? "~"),

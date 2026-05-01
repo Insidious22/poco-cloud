@@ -15,14 +15,14 @@ export const DashboardLayout = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
   return (
     <div className="min-h-screen lg:flex">
-      <aside className="border-b border-line bg-ink/75 backdrop-blur lg:fixed lg:inset-y-0 lg:w-72 lg:border-b-0 lg:border-r">
+      <aside className="border-b border-line bg-ink/90 backdrop-blur lg:fixed lg:inset-y-0 lg:w-72 lg:border-b-0 lg:border-r">
         <div className="flex h-16 items-center gap-3 px-5">
           <div className="grid h-9 w-9 place-items-center rounded-md bg-cyanGlow text-ink">
             <Shield className="h-5 w-5" />
@@ -32,13 +32,13 @@ export const DashboardLayout = () => {
             <p className="text-xs text-slate-500">Personal control plane</p>
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 lg:block lg:space-y-1 lg:overflow-visible">
+        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 [scrollbar-width:none] lg:block lg:space-y-1 lg:overflow-visible">
           {navItems.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
               className={({ isActive }) =>
-                `flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition ${
+                `flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium transition lg:shrink ${
                   isActive ? "bg-cyanGlow/12 text-cyanGlow" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
                 }`
               }
@@ -50,12 +50,12 @@ export const DashboardLayout = () => {
         </nav>
       </aside>
       <main className="min-w-0 flex-1 lg:ml-72">
-        <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-line bg-ink/75 px-5 backdrop-blur">
-          <div>
+        <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-line bg-ink/90 px-4 py-3 backdrop-blur sm:px-5">
+          <div className="min-w-0">
             <p className="text-xs uppercase tracking-widest text-cyanGlow">Secure session</p>
-            <h1 className="text-base font-semibold text-slate-100">{user?.displayName}</h1>
+            <h1 className="truncate text-base font-semibold text-slate-100">{user?.displayName}</h1>
           </div>
-          <Button variant="ghost" onClick={handleLogout}>
+          <Button variant="ghost" className="shrink-0" onClick={() => void handleLogout()}>
             <LogOut className="h-4 w-4" />
             Salir
           </Button>

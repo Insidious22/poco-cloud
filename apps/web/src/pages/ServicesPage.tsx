@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "../components/ui/Badge.js";
 import { Button } from "../components/ui/Button.js";
 import { Card } from "../components/ui/Card.js";
+import { Input } from "../components/ui/Input.js";
 import { Modal } from "../components/ui/Modal.js";
 import { useApi } from "../hooks/useApi.js";
 import { apiClient } from "../services/api.js";
@@ -12,10 +13,17 @@ export const ServicesPage = () => {
   const { data, reload } = useApi<ManagedService[]>(() => apiClient.services());
   const [selected, setSelected] = useState<ManagedService | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [password, setPassword] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
 
   const action = async (service: ManagedService, type: "start" | "stop") => {
-    if (type === "start") await apiClient.startService(service.name);
-    else await apiClient.stopService(service.name);
+    if (!password) {
+      setNotice("Confirma tu contrasena para cambiar servicios.");
+      return;
+    }
+    if (type === "start") await apiClient.startService(service.name, password);
+    else await apiClient.stopService(service.name, password);
+    setNotice(null);
     await reload();
   };
 
@@ -28,6 +36,21 @@ export const ServicesPage = () => {
   return (
     <div className="space-y-5">
       <h2 className="text-2xl font-semibold text-slate-50">Servicios</h2>
+      <Card>
+        <label className="text-sm font-medium text-slate-300" htmlFor="services-password">
+          Confirmacion
+        </label>
+        <Input
+          id="services-password"
+          className="mt-2 max-w-md"
+          type="password"
+          autoComplete="current-password"
+          placeholder="Contrasena de Poco Cloud"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        {notice ? <p className="mt-3 text-sm text-amber-200">{notice}</p> : null}
+      </Card>
       <div className="grid gap-4 md:grid-cols-2">
         {(data ?? []).map((service) => (
           <Card key={service.name}>

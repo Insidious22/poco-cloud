@@ -1,4 +1,5 @@
 import {
+  confirmPasswordSchema,
   sshPublicKeySchema,
   systemActionNames,
   type AuthorizedSshKey,
@@ -9,14 +10,15 @@ import {
   type SystemDiagnostics,
   type SystemStatus
 } from "@poco-cloud/shared";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { createHash } from "node:crypto";
 import { access, chmod, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { cpus, hostname, loadavg, networkInterfaces, platform, totalmem, freemem, uptime, homedir } from "node:os";
 import { join } from "node:path";
 import { appConfig } from "../config.js";
+import { verifyUserPassword } from "../auth/auth.service.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
-import { runControlled, spawnControlled } from "../utils/exec.js";
+import { runControlled, spawnScript } from "../utils/exec.js";
 
 const parseDf = (stdout: string): SystemStatus["disk"] => {
   const line = stdout.trim().split("\n").at(-1);
@@ -242,6 +244,25 @@ const sshHostFromRequest = (requestHost?: string): string => {
   return (requestHost ?? "YOUR_VPS_IP").split(":")[0] ?? "YOUR_VPS_IP";
 };
 
+const requirePasswordConfirmation = async (
+  request: FastifyRequest,
+  reply: FastifyReply,
+  password: string
+): Promise<boolean> => {
+  if (!request.currentUser) {
+    reply.code(401).send({ message: "Unauthorized" });
+    return false;
+  }
+
+  const valid = await verifyUserPassword(request.currentUser.id, password);
+  if (!valid) {
+    reply.code(403).send({ message: "Password confirmation failed" });
+    return false;
+  }
+
+  return true;
+};
+
 export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
   fastify.get("/api/system/status", { preHandler: requireAuth }, async (): Promise<SystemStatus> => {
     const freeMb = Math.round(freemem() / 1024 / 1024);
@@ -333,6 +354,9 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
       if (!parsed.success) {
         return reply.code(400).send({ message: parsed.error.issues[0]?.message ?? "Llave publica invalida" });
       }
+      if (!(await requirePasswordConfirmation(request, reply, parsed.data.password))) {
+        return reply;
+      }
 
       await ensureSshFiles();
       let normalized: string;
@@ -356,10 +380,18 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
     }
   );
 
-  fastify.delete<{ Params: { id: string } }>(
+  fastify.delete<{ Params: { id: string }; Body: { password: string } }>(
     "/api/system/ssh/keys/:id",
     { preHandler: requireAuth },
     async (request, reply) => {
+      const parsed = confirmPasswordSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ message: "Password confirmation is required" });
+      }
+      if (!(await requirePasswordConfirmation(request, reply, parsed.data.password))) {
+        return reply;
+      }
+
       await ensureSshFiles();
       const { lines } = await readAuthorizedKeys();
       const nextLines = lines.filter((line) => keyId(line) !== request.params.id);
@@ -372,7 +404,7 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
     }
   );
 
-  fastify.post<{ Params: { action: SystemActionName } }>(
+  fastify.post<{ Params: { action: SystemActionName }; Body: { password: string } }>(
     "/api/system/actions/:action",
     { preHandler: requireAuth },
     async (request, reply): Promise<SystemActionResponse> => {
@@ -380,6 +412,14 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
       if (!(systemActionNames as readonly string[]).includes(action)) {
         reply.code(404);
         return { ok: false, action, message: "Accion no permitida" };
+      }
+      const parsed = confirmPasswordSchema.safeParse(request.body);
+      if (!parsed.success) {
+        reply.code(400);
+        return { ok: false, action, message: "Confirma tu contrasena para ejecutar esta accion" };
+      }
+      if (!(await requirePasswordConfirmation(request, reply, parsed.data.password))) {
+        return { ok: false, action, message: "Confirmacion de contrasena fallida" };
       }
 
       if (action === "wake-lock") {
@@ -398,12 +438,7 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
       }
 
       if (action === "restart-frpc") {
-        const script = join(appConfig.repoRoot, "infra", "termux", "restart-frpc.sh");
-        if (!(await ensureFileExists(script))) {
-          reply.code(500);
-          return { ok: false, action, message: "No existe el script restart-frpc.sh" };
-        }
-        const pid = spawnControlled("sh", [script]);
+        const pid = spawnScript("restart-frpc");
         return { ok: true, action, message: `Reinicio de frp solicitado. PID ${pid}` };
       }
 

@@ -6,21 +6,22 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(Boolean(tokenStore.get()));
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      if (!tokenStore.get()) return;
       try {
         const response = await apiClient.me();
         setUser(response.user);
+      } catch {
+        tokenStore.clear();
       } finally {
         setLoading(false);
       }
@@ -34,10 +35,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       loading,
       login: async (username, password) => {
         const response = await apiClient.login(username, password);
-        tokenStore.set(response.token);
+        if (response.token) tokenStore.set(response.token);
         setUser(response.user);
       },
-      logout: () => {
+      logout: async () => {
+        await apiClient.logout().catch(() => undefined);
         tokenStore.clear();
         setUser(null);
       }

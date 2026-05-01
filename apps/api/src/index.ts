@@ -9,6 +9,7 @@ import { existsSync, createReadStream } from "node:fs";
 import { join } from "node:path";
 import { appConfig } from "./config.js";
 import { authRoutes } from "./auth/auth.routes.js";
+import { cleanExpiredSessions } from "./auth/auth.service.js";
 import { migrate } from "./db/migrate.js";
 import { filesRoutes } from "./services/files.controller.js";
 import { logsRoutes } from "./services/logs.controller.js";
@@ -22,13 +23,14 @@ const buildServer = async () => {
     }
   });
 
-  await fastify.register(
-    helmet,
-    appConfig.nodeEnv === "production" ? {} : { contentSecurityPolicy: false }
-  );
+  await fastify.register(helmet);
 
+  const allowedOrigins = [appConfig.webOrigin];
+  if (appConfig.nodeEnv !== "production") {
+    allowedOrigins.push("http://localhost:5173", "http://127.0.0.1:5173");
+  }
   await fastify.register(cors, {
-    origin: [appConfig.webOrigin, "http://localhost:5173", "http://127.0.0.1:5173"],
+    origin: allowedOrigins,
     credentials: true
   });
 
@@ -76,6 +78,7 @@ const buildServer = async () => {
 };
 
 migrate();
+cleanExpiredSessions();
 
 const server = await buildServer();
 await server.listen({ host: appConfig.host, port: appConfig.port });

@@ -3,6 +3,7 @@ import type { AuthUser } from "@poco-cloud/shared";
 declare module "fastify" {
   interface FastifyRequest {
     currentUser?: AuthUser;
+    authTokenId?: string;
   }
 }
 

@@ -18,10 +18,11 @@ export type SystemActionName = (typeof systemActionNames)[number];
 
 export const loginSchema = z.object({
   username: z.string().trim().min(3).max(64),
-  password: z.string().min(8).max(256)
+  password: z.string().min(1).max(256)
 });
 
 export const registerSchema = loginSchema.extend({
+  password: z.string().min(12).max(256),
   displayName: z.string().trim().min(2).max(80).optional()
 });
 
@@ -40,7 +41,12 @@ export const deleteFileSchema = z.object({
 
 export const sshPublicKeySchema = z.object({
   label: z.string().trim().min(2).max(80),
-  publicKey: z.string().trim().min(80).max(4096)
+  publicKey: z.string().trim().min(80).max(4096),
+  password: z.string().min(1).max(256)
+});
+
+export const confirmPasswordSchema = z.object({
+  password: z.string().min(1).max(256)
 });
 
 export interface AuthUser {
@@ -50,8 +56,16 @@ export interface AuthUser {
 }
 
 export interface AuthResponse {
-  token: string;
+  token?: string;
   user: AuthUser;
+}
+
+export interface AuthSession {
+  id: string;
+  createdAt: string;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  active: boolean;
 }
 
 export interface SystemStatus {

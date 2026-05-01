@@ -85,9 +85,9 @@ export const SystemStatus = () => {
       {cards.map((item) => (
         <Card key={item.label}>
           <div className="flex items-start justify-between gap-3">
-            <div>
+            <div className="min-w-0">
               <p className="text-sm text-slate-400">{item.label}</p>
-              <p className="mt-2 text-xl font-semibold text-slate-50">{item.value}</p>
+              <p className="mt-2 break-words text-lg font-semibold text-slate-50 sm:text-xl">{item.value}</p>
             </div>
             <div className="rounded-md bg-cyanGlow/10 p-2 text-cyanGlow">
               <item.icon className="h-5 w-5" />

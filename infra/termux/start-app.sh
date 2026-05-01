@@ -13,11 +13,14 @@ API_DIR="$APP_DIR/apps/api"
 LOG_DIR="${LOG_DIR:-$HOME}"
 API_PID_FILE="$LOG_DIR/poco-cloud-api.pid"
 DB_PATH="${DB_PATH:-$APP_DIR/data/poco-cloud.sqlite}"
-JWT_SECRET="${JWT_SECRET:-change-this-with-a-long-random-secret}"
+if [ -z "${JWT_SECRET:-}" ]; then
+  echo "JWT_SECRET is required. Set it in ~/poco-cloud.env before starting Poco Cloud."
+  exit 1
+fi
 PORT="${PORT:-8080}"
 HOST="${HOST:-0.0.0.0}"
-WEB_ORIGIN="${WEB_ORIGIN:-https://167-234-251-177.sslip.io}"
-FILES_ROOT="${FILES_ROOT:-$HOME}"
+WEB_ORIGIN="${WEB_ORIGIN:-http://localhost:8080}"
+FILES_ROOT="${FILES_ROOT:-$HOME/poco-cloud/storage}"
 
 termux-wake-lock || true
 
@@ -26,6 +29,7 @@ cd "$API_DIR"
 
 export NODE_ENV=production
 export HOST PORT WEB_ORIGIN JWT_SECRET DB_PATH FILES_ROOT LOG_DIR
+export SSH_PUBLIC_HOST SSH_PUBLIC_PORT ALLOW_REGISTRATION ALLOW_FILE_DELETE EXPOSE_CONFIG_CONTENT
 export SERVICE_SCRIPT_DIR="$APP_DIR/infra/termux"
 
 corepack pnpm db:migrate >> "$LOG_DIR/api.log" 2>&1 || true

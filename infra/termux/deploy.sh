@@ -17,7 +17,7 @@ LOG_DIR="${LOG_DIR:-$HOME}"
 API_LOG="$LOG_DIR/api.log"
 API_PID_FILE="$LOG_DIR/poco-cloud-api.pid"
 
-mkdir -p "$LOG_DIR" "$APP_DIR/data"
+mkdir -p "$LOG_DIR" "$APP_DIR/data" "${FILES_ROOT:-$APP_DIR/storage}"
 
 termux-wake-lock >/dev/null 2>&1 || true
 

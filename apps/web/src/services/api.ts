@@ -11,20 +11,17 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "",
-  timeout: 15000
+  timeout: 15000,
+  withCredentials: true
 });
 
 export const tokenStore = {
-  get: () => localStorage.getItem("poco_cloud_token"),
-  set: (token: string) => localStorage.setItem("poco_cloud_token", token),
-  clear: () => localStorage.removeItem("poco_cloud_token")
+  get: () => null,
+  set: (_token: string) => undefined,
+  clear: () => undefined
 };
 
 api.interceptors.request.use((config) => {
-  const token = tokenStore.get();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
   return config;
 });
 
@@ -56,6 +53,20 @@ export const apiClient = {
     const { data } = await api.get("/auth/me");
     return data;
   },
+  logout: async () => {
+    const { data } = await api.post("/auth/logout");
+    tokenStore.clear();
+    return data;
+  },
+  logoutAll: async () => {
+    const { data } = await api.post("/auth/logout-all");
+    tokenStore.clear();
+    return data;
+  },
+  sessions: async () => {
+    const { data } = await api.get("/auth/sessions");
+    return data;
+  },
   systemStatus: async () => {
     const { data } = await api.get("/api/system/status");
     return data;
@@ -76,24 +87,24 @@ export const apiClient = {
     const { data } = await api.get<SshAccessOverview>("/api/system/ssh/access");
     return data;
   },
-  addSshKey: async (label: string, publicKey: string) => {
-    const { data } = await api.post("/api/system/ssh/keys", { label, publicKey });
+  addSshKey: async (label: string, publicKey: string, password: string) => {
+    const { data } = await api.post("/api/system/ssh/keys", { label, publicKey, password });
     return data;
   },
-  deleteSshKey: async (id: string) => {
-    const { data } = await api.delete(`/api/system/ssh/keys/${id}`);
+  deleteSshKey: async (id: string, password: string) => {
+    const { data } = await api.delete(`/api/system/ssh/keys/${id}`, { data: { password } });
     return data;
   },
-  systemAction: async (action: SystemActionName) => {
-    const { data } = await api.post<SystemActionResponse>(`/api/system/actions/${action}`);
+  systemAction: async (action: SystemActionName, password: string) => {
+    const { data } = await api.post<SystemActionResponse>(`/api/system/actions/${action}`, { password });
     return data;
   },
   services: async () => {
     const { data } = await api.get("/api/services");
     return data;
   },
-  startService: async (name: string) => api.post(`/api/services/${name}/start`),
-  stopService: async (name: string) => api.post(`/api/services/${name}/stop`),
+  startService: async (name: string, password: string) => api.post(`/api/services/${name}/start`, { password }),
+  stopService: async (name: string, password: string) => api.post(`/api/services/${name}/stop`, { password }),
   logs: async (service: LogName) => {
     const { data } = await api.get(`/api/logs/${service}`);
     return data;

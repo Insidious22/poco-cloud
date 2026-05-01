@@ -33,7 +33,7 @@ Primer usuario:
 ```bash
 curl -X POST http://localhost:8080/auth/register ^
   -H "Content-Type: application/json" ^
-  -d "{\"username\":\"santi\",\"password\":\"cambia-esta-clave\",\"displayName\":\"Santi\"}"
+  -d "{\"username\":\"admin\",\"password\":\"usa-una-frase-larga-unica\",\"displayName\":\"Admin\"}"
 ```
 
 ## Build
@@ -47,7 +47,10 @@ pnpm start
 
 - `POST /auth/register`
 - `POST /auth/login`
+- `POST /auth/logout`
+- `POST /auth/logout-all`
 - `GET /auth/me`
+- `GET /auth/sessions`
 - `GET /api/system/status`
 - `GET /api/services`
 - `POST /api/services/:name/start`

@@ -1,10 +1,9 @@
 import type { ManagedService } from "@poco-cloud/shared";
-import { Activity, Power } from "lucide-react";
+import { Activity } from "lucide-react";
 import { useEffect } from "react";
 import { apiClient } from "../../services/api.js";
 import { useApi } from "../../hooks/useApi.js";
 import { Badge } from "../ui/Badge.js";
-import { Button } from "../ui/Button.js";
 import { Card } from "../ui/Card.js";
 
 export const ServicesWidget = () => {
@@ -14,12 +13,6 @@ export const ServicesWidget = () => {
     const timer = window.setInterval(() => void reload(), 5000);
     return () => window.clearInterval(timer);
   }, [reload]);
-
-  const toggle = async (service: ManagedService) => {
-    if (service.status === "running") await apiClient.stopService(service.name);
-    else await apiClient.startService(service.name);
-    await reload();
-  };
 
   return (
     <Card>
@@ -36,9 +29,6 @@ export const ServicesWidget = () => {
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <Badge tone={service.status === "running" ? "success" : "danger"}>{service.status}</Badge>
-              <Button variant="secondary" className="h-9 w-9 px-0" onClick={() => void toggle(service)} aria-label="Cambiar estado">
-                <Power className="h-4 w-4" />
-              </Button>
             </div>
           </div>
         ))}

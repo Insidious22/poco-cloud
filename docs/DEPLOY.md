@@ -90,7 +90,7 @@ auth.token = "MISMO_TOKEN_SECRETO"
 Con la API levantada:
 
 ```bash
-curl -X POST https://167-234-251-177.sslip.io/auth/register \
+curl -X POST https://YOUR_DOMAIN/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"santi","password":"cambia-esta-clave","displayName":"Santi"}'
+  -d '{"username":"admin","password":"usa-una-frase-larga-unica","displayName":"Admin"}'
 ```
