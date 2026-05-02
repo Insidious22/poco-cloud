@@ -62,14 +62,20 @@ export const ServicesPage = () => {
               <Badge tone={service.status === "running" ? "success" : "danger"}>{service.status}</Badge>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Button variant="secondary" onClick={() => void action(service, "start")}>
-                <Play className="h-4 w-4" />
-                Start
-              </Button>
-              <Button variant="secondary" onClick={() => void action(service, "stop")}>
-                <Square className="h-4 w-4" />
-                Stop
-              </Button>
+              {service.controllable ? (
+                <>
+                  <Button variant="secondary" onClick={() => void action(service, "start")}>
+                    <Play className="h-4 w-4" />
+                    Start
+                  </Button>
+                  <Button variant="secondary" onClick={() => void action(service, "stop")}>
+                    <Square className="h-4 w-4" />
+                    Stop
+                  </Button>
+                </>
+              ) : (
+                <Badge tone="neutral">Protegido</Badge>
+              )}
               <Button variant="ghost" onClick={() => void openLogs(service)}>
                 <FileText className="h-4 w-4" />
                 Logs

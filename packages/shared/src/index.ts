@@ -10,7 +10,6 @@ export const systemActionNames = [
   "wake-lock",
   "wake-unlock",
   "start-sshd",
-  "restart-frpc",
   "clear-api-log",
   "clear-frpc-log"
 ] as const;
@@ -163,6 +162,7 @@ export interface ManagedService {
   status: "running" | "stopped" | "unknown";
   pid?: number;
   logName: LogName;
+  controllable: boolean;
 }
 
 export interface FileEntry {

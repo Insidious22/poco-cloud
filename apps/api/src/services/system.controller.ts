@@ -18,7 +18,7 @@ import { join } from "node:path";
 import { appConfig } from "../config.js";
 import { verifyUserPassword } from "../auth/auth.service.js";
 import { requireAuth } from "../middleware/auth.middleware.js";
-import { runControlled, spawnScript } from "../utils/exec.js";
+import { runControlled } from "../utils/exec.js";
 
 const parseDf = (stdout: string): SystemStatus["disk"] => {
   const line = stdout.trim().split("\n").at(-1);
@@ -435,11 +435,6 @@ export const systemRoutes = async (fastify: FastifyInstance): Promise<void> => {
       if (action === "start-sshd") {
         const result = await runControlled("sshd", [], 3000);
         return { ok: !result.stderr, action, message: result.stderr || "SSH iniciado" };
-      }
-
-      if (action === "restart-frpc") {
-        const pid = spawnScript("restart-frpc");
-        return { ok: true, action, message: `Reinicio de frp solicitado. PID ${pid}` };
       }
 
       if (action === "clear-api-log") {

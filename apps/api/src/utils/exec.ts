@@ -26,8 +26,7 @@ const allowedCommands = new Set([
 ]);
 
 const allowedScripts: Record<string, () => string> = {
-  "start-api": () => resolve(appConfig.serviceScriptDir, "start-api.sh"),
-  "restart-frpc": () => resolve(appConfig.repoRoot, "infra", "termux", "restart-frpc.sh")
+  "start-api": () => resolve(appConfig.serviceScriptDir, "start-api.sh")
 };
 
 export interface CommandResult {

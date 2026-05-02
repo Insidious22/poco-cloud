@@ -13,6 +13,7 @@ interface ServiceDefinition {
   description: string;
   pattern: string;
   logName: ManagedService["logName"];
+  controllable: boolean;
   start: () => number;
   stop: () => Promise<void>;
 }
@@ -24,7 +25,8 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Tunel inverso del Poco F3 hacia el VPS.",
     pattern: "frpc",
     logName: "frpc",
-  start: () => spawnControlled("frpc", ["-c", `${homedir()}/frpc.toml`]),
+    controllable: false,
+    start: () => spawnControlled("frpc", ["-c", `${homedir()}/frpc.toml`]),
     stop: async () => {
       await runControlled("pkill", ["-f", "frpc.*-c.*/frpc.toml"]);
     }
@@ -35,6 +37,7 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Backend principal del panel de control.",
     pattern: "poco-cloud.*apps/api",
     logName: "api",
+    controllable: true,
     start: () => spawnScript("start-api"),
     stop: async () => {
       await runControlled("pkill", ["-f", "poco-cloud.*apps/api"]);
@@ -46,6 +49,7 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Servidor multimedia personal.",
     pattern: "jellyfin",
     logName: "jellyfin",
+    controllable: true,
     start: () => spawnControlled("jellyfin"),
     stop: async () => {
       await runControlled("pkill", ["-f", "jellyfin"]);
@@ -57,6 +61,7 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Explorador web de archivos.",
     pattern: "filebrowser",
     logName: "filebrowser",
+    controllable: true,
     start: () => spawnControlled("filebrowser", ["-r", appConfig.filesRoot]),
     stop: async () => {
       await runControlled("pkill", ["-f", "filebrowser"]);
@@ -74,7 +79,8 @@ const getServiceStatus = async (service: ServiceDefinition): Promise<ManagedServ
     description: service.description,
     status: Number.isFinite(pid) && pid > 0 ? "running" : "stopped",
     ...(Number.isFinite(pid) && pid > 0 ? { pid } : {}),
-    logName: service.logName
+    logName: service.logName,
+    controllable: service.controllable
   };
 };
 
@@ -113,6 +119,9 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
       if (!(await confirmPassword(request, reply))) return reply;
 
       const service = serviceDefinitions[name];
+      if (!service.controllable) {
+        return reply.code(403).send({ message: "Protected service cannot be controlled from the web" });
+      }
       const pid = service.start();
       return { message: "Service start requested", service: name, pid };
     }
@@ -126,7 +135,12 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
       if (!name) return reply.code(404).send({ message: "Unknown service" });
       if (!(await confirmPassword(request, reply))) return reply;
 
-      await serviceDefinitions[name].stop();
+      const service = serviceDefinitions[name];
+      if (!service.controllable) {
+        return reply.code(403).send({ message: "Protected service cannot be controlled from the web" });
+      }
+
+      await service.stop();
       return { message: "Service stop requested", service: name };
     }
   );

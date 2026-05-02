@@ -17,7 +17,6 @@ import {
   Plus,
   Power,
   RefreshCw,
-  RotateCcw,
   Server,
   ShieldCheck,
   Terminal,
@@ -57,8 +56,7 @@ const actionGroups: Array<{
     title: "Conectividad",
     description: "Servicios base para entrar al telefono desde fuera.",
     actions: [
-      { action: "start-sshd", label: "Iniciar SSH", icon: Terminal, variant: "secondary" },
-      { action: "restart-frpc", label: "Reiniciar frp", icon: RotateCcw, variant: "danger" }
+      { action: "start-sshd", label: "Iniciar SSH", icon: Terminal, variant: "secondary" }
     ]
   },
   {
