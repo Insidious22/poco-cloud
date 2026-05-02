@@ -17,7 +17,7 @@ export const Button = ({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) => (
   <button
     className={clsx(
-      "inline-flex h-10 items-center justify-center gap-2 rounded-md px-4 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50",
+      "inline-flex min-h-10 min-w-0 items-center justify-center gap-2 rounded-md px-3 py-2 text-center text-sm font-semibold leading-tight transition disabled:cursor-not-allowed disabled:opacity-50 sm:px-4",
       styles[variant],
       className
     )}

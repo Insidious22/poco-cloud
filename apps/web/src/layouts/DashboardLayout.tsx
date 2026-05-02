@@ -21,35 +21,35 @@ export const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen lg:flex">
-      <aside className="border-b border-line bg-ink/90 backdrop-blur lg:fixed lg:inset-y-0 lg:w-72 lg:border-b-0 lg:border-r">
-        <div className="flex h-16 items-center gap-3 px-5">
+    <div className="app-shell">
+      <aside className="desktop-sidebar sticky top-0 z-30 border-b border-line bg-ink/95 backdrop-blur">
+        <div className="flex h-16 min-w-0 items-center gap-3 px-4 sm:px-5">
           <div className="grid h-9 w-9 place-items-center rounded-md bg-cyanGlow text-ink">
             <Shield className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-100">Poco Cloud</p>
             <p className="text-xs text-slate-500">Personal control plane</p>
           </div>
         </div>
-        <nav className="flex gap-1 overflow-x-auto px-3 pb-3 [scrollbar-width:none] lg:block lg:space-y-1 lg:overflow-visible">
+        <nav className="mobile-nav-grid desktop-nav gap-1 px-2 pb-2 sm:px-3">
           {navItems.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}
               className={({ isActive }) =>
-                `flex h-11 shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium transition lg:shrink ${
+                `nav-item flex min-w-0 flex-col items-center justify-center gap-1 rounded-md px-1.5 py-2 text-[11px] font-medium leading-tight transition ${
                   isActive ? "bg-cyanGlow/12 text-cyanGlow" : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
                 }`
               }
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              <item.icon className="h-4 w-4 shrink-0" />
+              <span className="min-w-0 truncate">{item.label}</span>
             </NavLink>
           ))}
         </nav>
       </aside>
-      <main className="min-w-0 flex-1 lg:ml-72">
+      <main className="desktop-main min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex min-h-16 items-center justify-between gap-3 border-b border-line bg-ink/90 px-4 py-3 backdrop-blur sm:px-5">
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-widest text-cyanGlow">Secure session</p>
@@ -60,7 +60,7 @@ export const DashboardLayout = () => {
             Salir
           </Button>
         </header>
-        <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
+        <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 md:p-6">
           <Outlet />
         </div>
       </main>

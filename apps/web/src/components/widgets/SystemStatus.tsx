@@ -81,7 +81,7 @@ export const SystemStatus = () => {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div className="adaptive-status-grid">
       {cards.map((item) => (
         <Card key={item.label}>
           <div className="flex items-start justify-between gap-3">

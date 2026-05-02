@@ -15,7 +15,7 @@ export const DashboardPage = () => {
         <p className="mt-1 text-sm text-slate-500">Estado actual del Poco F3</p>
       </div>
       <SystemStatus />
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.15fr]">
+      <div className="adaptive-split-grid">
         <ServicesWidget />
         <Card>
           <div className="mb-4 flex items-center justify-between">

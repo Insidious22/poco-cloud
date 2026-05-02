@@ -72,7 +72,7 @@ const actionGroups: Array<{
 ];
 
 const ConfigBlock = ({ file }: { file: SystemConfigFile }) => (
-  <div className="rounded-md border border-line bg-ink/70">
+  <div className="min-w-0 rounded-md border border-line bg-ink/70">
     <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
       <div className="min-w-0">
         <p className="font-semibold text-slate-100">{file.label}</p>
@@ -216,7 +216,7 @@ export const SystemPage = () => {
         </div>
       ) : null}
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.15fr]">
+      <div className="adaptive-split-grid">
         <Card>
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
@@ -234,7 +234,7 @@ export const SystemPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="adaptive-status-grid">
                 {(diagnostics?.processes ?? []).map((process) => (
                   <div key={process.name} className="rounded-md border border-line bg-ink/60 p-4">
                     <div className="flex items-center justify-between gap-2">
@@ -286,7 +286,7 @@ export const SystemPage = () => {
               className="mt-2 h-11 w-full rounded-md border border-line bg-ink/70 px-3 text-sm text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyanGlow focus:ring-2 focus:ring-cyanGlow/20"
             />
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="adaptive-card-grid">
             {actionGroups.map((group) => (
               <div key={group.title} className="rounded-md border border-line bg-ink/60 p-4">
                 <h4 className="font-semibold text-slate-100">{group.title}</h4>
@@ -325,7 +325,7 @@ export const SystemPage = () => {
           </Button>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="adaptive-split-grid">
           <div className="space-y-4">
             <div className="rounded-md border border-line bg-ink/60 p-4">
               <p className="text-sm text-slate-400">Comando generico</p>
@@ -377,13 +377,13 @@ export const SystemPage = () => {
         </div>
       </Card>
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="adaptive-split-grid">
         <Card>
           <div className="mb-4 flex items-center gap-2">
             <FileCode2 className="h-5 w-5 text-cyanGlow" />
             <h3 className="text-lg font-semibold text-slate-100">Configuracion activa</h3>
           </div>
-          <div className="grid gap-4 lg:grid-cols-3">
+          <div className="adaptive-config-grid">
             {configs.map((file) => (
               <ConfigBlock key={file.key} file={file} />
             ))}
