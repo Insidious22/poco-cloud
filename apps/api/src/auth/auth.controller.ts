@@ -1,9 +1,7 @@
 import { loginSchema, registerSchema } from "@poco-cloud/shared";
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { appConfig } from "../config.js";
 import { clearAuthCookie, setAuthCookie } from "./auth.cookies.js";
 import {
-  countUsers,
   findUserById,
   listUserSessions,
   loginUser,
@@ -13,10 +11,6 @@ import {
 } from "./auth.service.js";
 
 export const registerController = async (request: FastifyRequest, reply: FastifyReply) => {
-  if (countUsers() > 0 && !appConfig.allowRegistration) {
-    return reply.code(403).send({ message: "Registration is disabled" });
-  }
-
   const parsed = registerSchema.safeParse(request.body);
   if (!parsed.success) {
     return reply.code(400).send({ message: "Invalid registration payload" });

@@ -1,6 +1,6 @@
 import type { AuthUser } from "@poco-cloud/shared";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { apiClient, tokenStore } from "../services/api.js";
+import { apiClient } from "../services/api.js";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const response = await apiClient.me();
         setUser(response.user);
       } catch {
-        tokenStore.clear();
+        /* session cookie invalid or missing */
       } finally {
         setLoading(false);
       }
@@ -35,12 +35,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       loading,
       login: async (username, password) => {
         const response = await apiClient.login(username, password);
-        if (response.token) tokenStore.set(response.token);
         setUser(response.user);
       },
       logout: async () => {
         await apiClient.logout().catch(() => undefined);
-        tokenStore.clear();
         setUser(null);
       }
     }),

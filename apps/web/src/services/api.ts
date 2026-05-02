@@ -15,21 +15,10 @@ const api = axios.create({
   withCredentials: true
 });
 
-export const tokenStore = {
-  get: () => null,
-  set: (_token: string) => undefined,
-  clear: () => undefined
-};
-
-api.interceptors.request.use((config) => {
-  return config;
-});
-
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      tokenStore.clear();
       if (location.pathname !== "/login") location.href = "/login";
     }
     return Promise.reject(error);
@@ -55,12 +44,10 @@ export const apiClient = {
   },
   logout: async () => {
     const { data } = await api.post("/auth/logout");
-    tokenStore.clear();
     return data;
   },
   logoutAll: async () => {
     const { data } = await api.post("/auth/logout-all");
-    tokenStore.clear();
     return data;
   },
   sessions: async () => {

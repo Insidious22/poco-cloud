@@ -79,6 +79,7 @@ const buildServer = async () => {
 
 migrate();
 cleanExpiredSessions();
+setInterval(() => cleanExpiredSessions(), 24 * 60 * 60 * 1000);
 
 const server = await buildServer();
 await server.listen({ host: appConfig.host, port: appConfig.port });
