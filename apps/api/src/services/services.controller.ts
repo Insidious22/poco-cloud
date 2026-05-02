@@ -37,7 +37,7 @@ const serviceDefinitions: Record<ServiceName, ServiceDefinition> = {
     description: "Backend principal del panel de control.",
     pattern: "poco-cloud.*apps/api",
     logName: "api",
-    controllable: true,
+    controllable: false,
     start: () => spawnScript("start-api"),
     stop: async () => {
       await runControlled("pkill", ["-f", "poco-cloud.*apps/api"]);
@@ -122,8 +122,13 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
       if (!service.controllable) {
         return reply.code(403).send({ message: "Protected service cannot be controlled from the web" });
       }
-      const pid = service.start();
-      return { message: "Service start requested", service: name, pid };
+      try {
+        const pid = service.start();
+        return { message: "Service start requested", service: name, pid };
+      } catch (error) {
+        request.log.warn({ error, service: name }, "Service start failed");
+        return reply.code(409).send({ message: (error as Error).message });
+      }
     }
   );
 
@@ -140,8 +145,13 @@ export const servicesRoutes = async (fastify: FastifyInstance): Promise<void> =>
         return reply.code(403).send({ message: "Protected service cannot be controlled from the web" });
       }
 
-      await service.stop();
-      return { message: "Service stop requested", service: name };
+      try {
+        await service.stop();
+        return { message: "Service stop requested", service: name };
+      } catch (error) {
+        request.log.warn({ error, service: name }, "Service stop failed");
+        return reply.code(409).send({ message: (error as Error).message });
+      }
     }
   );
 };

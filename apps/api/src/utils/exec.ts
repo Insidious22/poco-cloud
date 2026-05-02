@@ -1,6 +1,7 @@
 import { execFile, spawn } from "node:child_process";
 import { existsSync, realpathSync } from "node:fs";
-import { isAbsolute, relative, resolve } from "node:path";
+import { delimiter } from "node:path";
+import { isAbsolute, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import { appConfig } from "../config.js";
 
@@ -33,6 +34,15 @@ export interface CommandResult {
   stdout: string;
   stderr: string;
 }
+
+const commandExists = (command: string): boolean => {
+  if (isAbsolute(command)) return existsSync(command);
+
+  return (process.env.PATH ?? "")
+    .split(delimiter)
+    .filter(Boolean)
+    .some((directory) => existsSync(join(directory, command)));
+};
 
 export const runControlled = async (
   command: string,
@@ -69,6 +79,10 @@ export const spawnControlled = (
     throw new Error(`Command is not allowed: ${command}`);
   }
 
+  if (!commandExists(command)) {
+    throw new Error(`Command is not installed: ${command}`);
+  }
+
   const child = spawn(command, args, {
     cwd: options.cwd,
     env: { ...process.env, ...options.env },
@@ -76,6 +90,7 @@ export const spawnControlled = (
     stdio: "ignore"
   });
 
+  child.once("error", () => undefined);
   child.unref();
   return child.pid ?? 0;
 };
@@ -109,6 +124,7 @@ export const spawnScript = (scriptKey: keyof typeof allowedScripts): number => {
     stdio: "ignore"
   });
 
+  child.once("error", () => undefined);
   child.unref();
   return child.pid ?? 0;
 };

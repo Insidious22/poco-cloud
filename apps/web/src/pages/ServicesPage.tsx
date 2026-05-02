@@ -21,10 +21,16 @@ export const ServicesPage = () => {
       setNotice("Confirma tu contrasena para cambiar servicios.");
       return;
     }
-    if (type === "start") await apiClient.startService(service.name, password);
-    else await apiClient.stopService(service.name, password);
-    setNotice(null);
-    await reload();
+
+    try {
+      if (type === "start") await apiClient.startService(service.name, password);
+      else await apiClient.stopService(service.name, password);
+      setNotice(null);
+      await reload();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "No se pudo cambiar el servicio.";
+      setNotice(message);
+    }
   };
 
   const openLogs = async (service: ManagedService) => {
